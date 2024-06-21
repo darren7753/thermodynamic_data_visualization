@@ -346,7 +346,11 @@ def korelasi_pearson():
         st.subheader("Korelasi Pearson")
         st.plotly_chart(fig_heatmap)
 
+def clear_cache():
+    load_from_mongo.clear()
+
 def data():
+    df_id = load_from_mongo(collection)
     st.write(df_id.shape)
     st.dataframe(df_id, use_container_width=True)
 
@@ -375,20 +379,33 @@ def data():
                 new_df = pd.DataFrame(new_data)
                 store_to_mongo(new_df, collection, mode="append")
                 st.success("Row created successfully!", icon="✅")
+
+                df_id = load_from_mongo(collection)
+                st.dataframe(df_id, use_container_width=True).data = df_id
+                st.rerun()
             else:
                 st.error("Please fill in all inputs.", icon="🚨")
 
         st.divider()
 
         st.subheader("Upload Data")
+        if 'data_uploaded' not in st.session_state:
+            st.session_state.data_uploaded = False
+
         upload_file = st.file_uploader("Upload Excel File", type=["xlsx"], label_visibility="collapsed")
-        if upload_file:
+        if upload_file and not st.session_state.data_uploaded:
             uploaded_df = pd.read_excel(upload_file)
             if uploaded_df.columns.to_list() == df.columns.to_list():
                 store_to_mongo(uploaded_df, collection, mode="append")
+                st.session_state.data_uploaded = True
                 st.success("Data uploaded successfully!", icon="✅")
+                st.rerun()
             else:
                 st.error("The columns of the uploaded file do not match the existing data.", icon="🚨")
+
+    # Clear the upload flag after rerun
+    if st.session_state.data_uploaded:
+        st.session_state.data_uploaded = False
 
     with tab2:
         st.subheader("Update Data")
@@ -424,6 +441,10 @@ def data():
                 if update_data:
                     collection.update_one({"_id": ObjectId(row_id)}, {"$set": update_data})
                     st.success("Row updated successfully!", icon="✅")
+
+                    df_id = load_from_mongo(collection)
+                    st.dataframe(df_id, use_container_width=True).data = df_id
+                    st.rerun()
                 else:
                     st.error("No changes detected. Please modify at least one value.", icon="🚨")
 
@@ -441,6 +462,10 @@ def data():
                     st.success("Row deleted successfully!", icon="✅")
                 else:
                     st.success("Rows deleted successfully!", icon="✅")
+
+                df_id = load_from_mongo(collection)
+                st.dataframe(df_id, use_container_width=True).data = df_id
+                st.rerun()
 
 # Main Content
 if pages == "Visualisasi Otomatis":
