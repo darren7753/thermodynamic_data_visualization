@@ -122,7 +122,7 @@ def visualisasi_otomatis():
         )
 
     if generate:
-        pr = gen_profile_report(df, explorative=True)
+        pr = gen_profile_report(df, minimal=True)
         st_profile_report(pr)
 
 def visualisasi_2d():
